@@ -28,3 +28,9 @@ pool.query('SELECT NOW()', (err, res) => {
 
 const authRoutes = require('./auth')
 app.use('/api/auth', authRoutes)
+
+const categoryRoutes = require('./categories')
+app.use('/api/categories', categoryRoutes)
+
+const transactionRoutes = require('./transactions')
+app.use('/api/transactions', transactionRoutes)
