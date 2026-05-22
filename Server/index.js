@@ -1,3 +1,6 @@
+require('dotenv').config()
+
+
 const express = require('express')
 const cors = require('cors')
 
@@ -22,3 +25,6 @@ pool.query('SELECT NOW()', (err, res) => {
     console.log('DB connected:', res.rows[0])
   }
 })
+
+const authRoutes = require('./auth')
+app.use('/api/auth', authRoutes)
