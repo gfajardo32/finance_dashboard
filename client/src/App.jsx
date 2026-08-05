@@ -54,54 +54,25 @@ function App() {
         }
       });
   }
+
+  function deleteTransaction(id) {
+    apiFetch(`/transactions/${id}`, { method: "DELETE" }).then((data) => {
+      if (!data) return;
+      setTransactions(transactions.filter((t) => t.id !== id));
+    });
+  }
+
   useEffect(() => {
-    if (!token) {
-      return (
-        <div>
-          <h1>Login</h1>
-          <LoginForm onLogin={login} />
-        </div>
-      );
-    }
+    if (!token) return;
+    apiFetch("/transactions").then((data) => {
+      if (data) setTransactions(data);
+    });
   }, [token]);
   if (!token) {
     return (
       <div>
         <h1>Login</h1>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const email = e.target.email.value;
-            const password = e.target.password.value;
-            fetch("http://localhost:3000/login", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ email, password }),
-            })
-              .then((res) => res.json())
-              .then((data) => {
-                if (data.token) {
-                  localStorage.setItem("token", data.token);
-                  setToken(data.token);
-                } else {
-                  alert("Invalid credentials");
-                }
-              });
-          }}
-        >
-          <label htmlFor="email">Email:</label>
-          <input id="email" type="email" name="email" placeholder="Email" />
-          <label htmlFor="password">Password:</label>
-          <input
-            id="password"
-            type="password"
-            name="password"
-            placeholder="Password"
-          />
-          <button type="submit">Login</button>
-        </form>
+        <LoginForm onLogin={login} />
       </div>
     );
   }
@@ -110,7 +81,10 @@ function App() {
       <h1>Finance Dashboard</h1>
       <button onClick={logout}>Logout</button>
       {/* list of transactions */}
-      <TransactionList transactions={transactions} />
+      <TransactionList
+        transactions={transactions}
+        onDelete={deleteTransaction}
+      />{" "}
       {/*form submission handler for transactions */}
       <TransactionForm onAdd={addTransaction} />
     </div>

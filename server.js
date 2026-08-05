@@ -86,6 +86,22 @@ app.get("/transactions", authenticate, async (req, res) => {
 
 app.listen(3000, () => console.log("Server is running on port 3000"));
 
+app.delete("/transactions/:id", authenticate, async (req, res) => {
+  try {
+    const result = await pool.query(
+      "DELETE FROM transactions WHERE id = $1 AND user_id = $2 RETURNING id",
+      [req.params.id, req.userId],
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Transaction not found" });
+    }
+    res.json({ id : result.rows[0].id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 //AUTHENTICATION
 function authenticate(req, res, next) {
   const authHeader = req.headers.authorization;
