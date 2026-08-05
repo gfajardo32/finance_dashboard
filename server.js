@@ -66,6 +66,7 @@ app.post("/transactions", authenticate, async (req, res) => {
   res.status(201).json(result.rows[0]);
 });
 
+
 app.get("/", (req, res) => {
   res.json({ message: "API is running" });
 });

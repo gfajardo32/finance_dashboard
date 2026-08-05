@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
+import TransactionList from "./components/TransactionList";
+import TransactionForm from "./components/TransactionForm";
+import LoginForm from "./components/LoginForm";
 
 function App() {
   const [transactions, setTransactions] = useState([]);
   const [token, setToken] = useState(localStorage.getItem("token"));
-  const [description, setDescription] = useState("");
-  const [amount, setAmount] = useState("");
 
   function logout() {
     localStorage.removeItem("token");
@@ -26,11 +27,42 @@ function App() {
 
     return res.json();
   }
-useEffect(() => {
-    if (!token) return;
-    apiFetch("/transactions").then((data) => {
-      if (data) setTransactions(data);
+  function addTransaction(description, amount) {
+    apiFetch("/transactions", {
+      method: "POST",
+      body: JSON.stringify({ description, amount, category_id: null }),
+    }).then((newTransaction) => {
+      if (!newTransaction) return;
+      setTransactions([newTransaction, ...transactions]);
     });
+  }
+  function login(email, password) {
+    fetch("http://localhost:3000/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.token) {
+          localStorage.setItem("token", data.token);
+          setToken(data.token);
+        } else {
+          alert("Invalid credentials");
+        }
+      });
+  }
+  useEffect(() => {
+    if (!token) {
+      return (
+        <div>
+          <h1>Login</h1>
+          <LoginForm onLogin={login} />
+        </div>
+      );
+    }
   }, [token]);
   if (!token) {
     return (
@@ -62,7 +94,12 @@ useEffect(() => {
           <label htmlFor="email">Email:</label>
           <input id="email" type="email" name="email" placeholder="Email" />
           <label htmlFor="password">Password:</label>
-          <input id="password" type="password" name="password" placeholder="Password" />
+          <input
+            id="password"
+            type="password"
+            name="password"
+            placeholder="Password"
+          />
           <button type="submit">Login</button>
         </form>
       </div>
@@ -73,47 +110,9 @@ useEffect(() => {
       <h1>Finance Dashboard</h1>
       <button onClick={logout}>Logout</button>
       {/* list of transactions */}
-      <ul>
-        {transactions.map((t) => (
-          <li key={t.id}>
-            {t.description}: {t.amount}
-          </li>
-        ))}
-      </ul>
+      <TransactionList transactions={transactions} />
       {/*form submission handler for transactions */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          apiFetch("/transactions", {
-            method: "POST",
-            body: JSON.stringify({ description, amount, category_id: null }),
-          }).then((newTransaction) => {
-            if (!newTransaction) return;
-            setTransactions([newTransaction, ...transactions]);
-            setDescription("");
-            setAmount("");
-          });
-
-        }}
-      >
-        <label htmlFor="description">Description:</label>
-        <input
-          id="description"
-          type="text"
-          placeholder="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-        <label htmlFor="amount">amount:</label>
-        <input
-          id="amount"
-          type="text"
-          placeholder="Amount"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-        />
-        <button type="submit">Add Transaction</button>
-      </form>
+      <TransactionForm onAdd={addTransaction} />
     </div>
   );
 }
