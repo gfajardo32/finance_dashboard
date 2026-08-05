@@ -57,13 +57,33 @@ app.post("/login", async (req, res) => {
   res.json({ token });
 });
 
-app.post("/transactions", authenticate, async (req, res) => {
-  const { amount, description, category_id } = req.body;
-  const result = await pool.query(
-    "INSERT INTO transactions (user_id, amount, description, category_id) VALUES ($1, $2, $3, $4) RETURNING id, amount, description, category_id, occurred_at",
-    [req.userId, amount, description, category_id],
-  );
-  res.status(201).json(result.rows[0]);
+app.post('/transactions', authenticate, async (req, res) => {
+    const { amount, description, category_id, currency } = req.body;
+
+    if (amount === undefined || !description) {
+        return res.status(400).json({ error: 'Amount and description are required' });
+    }
+
+    try {
+        const result = await pool.query(
+            'INSERT INTO transactions (user_id, amount, description, category_id, currency) VALUES ($1, $2, $3, $4, $5) RETURNING id, amount, description, category_id, currency, occurred_at',
+            [req.userId, amount, description, category_id, currency || 'HNL']
+        );
+
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error(err);
+
+        if (err.code === '23514') {
+            return res.status(400).json({ error: 'Invalid currency' });
+        }
+
+        if (err.code === '23503') {
+            return res.status(400).json({ error: 'Invalid category' });
+        }
+
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 
@@ -78,7 +98,7 @@ app.get("/users", authenticate, async (req, res) => {
 
 app.get("/transactions", authenticate, async (req, res) => {
   const result = await pool.query(
-    "SELECT id, amount, description, category_id, occurred_at FROM transactions WHERE user_id = $1 ORDER BY occurred_at DESC",
+    "SELECT id, amount, description, category_id, currency, occurred_at FROM transactions WHERE user_id = $1 ORDER BY occurred_at DESC",
     [req.userId],
   );
   res.json(result.rows);

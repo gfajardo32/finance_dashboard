@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import TransactionList from "./components/TransactionList";
 import TransactionForm from "./components/TransactionForm";
 import LoginForm from "./components/LoginForm";
+import Summary from "./components/Summary";
 
 function App() {
   const [transactions, setTransactions] = useState([]);
@@ -11,6 +12,7 @@ function App() {
     localStorage.removeItem("token");
     setToken(null);
   }
+
   async function apiFetch(path, options = {}) {
     const res = await fetch(`http://localhost:3000${path}`, {
       ...options,
@@ -27,10 +29,15 @@ function App() {
 
     return res.json();
   }
-  function addTransaction(description, amount) {
+  function addTransaction(description, amount, currency) {
     apiFetch("/transactions", {
       method: "POST",
-      body: JSON.stringify({ description, amount, category_id: null }),
+      body: JSON.stringify({
+        description,
+        amount,
+        currency,
+        category_id: null,
+      }),
     }).then((newTransaction) => {
       if (!newTransaction) return;
       setTransactions([newTransaction, ...transactions]);
@@ -68,6 +75,11 @@ function App() {
       if (data) setTransactions(data);
     });
   }, [token]);
+  const lempiras = transactions.filter((t) => t.currency === "HNL");
+  const dollars = transactions.filter((t) => t.currency === "USD");
+
+  const totalHNL = lempiras.reduce((sum, t) => sum + Number(t.amount), 0);
+  const totalUSD = dollars.reduce((sum, t) => sum + Number(t.amount), 0);
   if (!token) {
     return (
       <div>
@@ -80,13 +92,28 @@ function App() {
     <div>
       <h1>Finance Dashboard</h1>
       <button onClick={logout}>Logout</button>
-      {/* list of transactions */}
-      <TransactionList
-        transactions={transactions}
-        onDelete={deleteTransaction}
-      />{" "}
-      {/*form submission handler for transactions */}
+
       <TransactionForm onAdd={addTransaction} />
+
+      <div style={{ display: "flex", gap: "2rem" }}>
+        <div style={{ flex: 1 }}>
+          <h2>Lempiras</h2>
+          <Summary total={totalHNL} currency="HNL" />
+          <TransactionList
+            transactions={lempiras}
+            onDelete={deleteTransaction}
+          />
+        </div>
+
+        <div style={{ flex: 1 }}>
+          <h2>Dólares</h2>
+          <Summary total={totalUSD} currency="USD" />
+          <TransactionList
+            transactions={dollars}
+            onDelete={deleteTransaction}
+          />
+        </div>
+      </div>
     </div>
   );
 }
