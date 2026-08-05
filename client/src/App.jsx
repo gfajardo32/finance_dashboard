@@ -2,11 +2,12 @@ import {useState, useEffect} from "react";
 
 function App() {
   const [transactions, setTransactions] = useState([]);
-const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsImlhdCI6MTc4NTk1ODQ2NiwiZXhwIjoxNzg1OTYyMDY2fQ.07RosN0w61Z8HYfQmHznNSjiDDhsHTfEsA6ZUIrDbl4";
+  const [token, setToken] = useState(null);
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState(""); 
 
   useEffect(() => {
+    if (!token) return;
     fetch("http://localhost:3000/transactions", {
       headers: {
         'Authorization': `Bearer ${token}`
@@ -16,8 +17,40 @@ const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsImlhdCI6MTc4
       .then(data => {console.log(data);
         setTransactions(data);
       });
-  }, []);
-
+  }, [token]);
+if (!token) {
+    return (
+      <div>
+        <h1>Login</h1>
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          const email = e.target.email.value;
+          const password = e.target.password.value;
+          fetch("http://localhost:3000/login", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ email, password })
+          })
+            .then(res => res.json())
+            .then(data => {
+              if (data.token) {
+                setToken(data.token);
+              } else {
+                alert("Invalid credentials");
+              }
+            });
+        }}>
+          <label htmlFor="email">Email:</label>
+          <input type="email" name="email" placeholder="Email" />
+          <label htmlFor="password">Password:</label>
+          <input type="password" name="password" placeholder="Password" />
+          <button type="submit">Login</button>
+        </form>
+      </div>
+    );
+  }
   return (
     <div>
       <h1>Finance Dashboard</h1>
